@@ -1,0 +1,40 @@
+
+name: Daily GitHub Activity
+
+on:
+  schedule:
+    - cron: '37 12 * * *'
+      timezone: 'Europe/Skopje'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  daily-update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Update daily activity
+        run: |
+          mkdir -p activity
+          DATE=$(TZ=Europe/Skopje date +%Y-%m-%d)
+          echo "Automated daily activity: $DATE" >> activity/log.md
+
+      - name: Commit and push
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_USER: ${{ github.actor }}
+        run: |
+          git config user.name "$GH_USER"
+          git config user.email \
+            "${{ github.repository_owner_id }}+${GH_USER}@users.noreply.github.com"
+
+          git add activity/log.md
+          git commit -m "chore: daily activity update" || exit 0
+          git push
